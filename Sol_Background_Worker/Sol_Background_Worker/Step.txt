@@ -1,0 +1,39 @@
+Step 1:
+Download Following Nuget Packages
+DalSoft.Hosting.BackgroundQueue
+
+Step 2:
+On Startup file, add middleware service on Configuration Service Method.
+ services.AddBackgroundQueue(maxConcurrentCount: 1, millisecondsToWaitBeforePickingUpTask: 1000, onException: (leexception) => { });
+
+Step 3:
+On Controller, add the following Code
+
+	private readonly BackgroundQueue backgroundQueue;
+
+        public DemoController(BackgroundQueue backgroundQueue)
+        {
+            this.backgroundQueue = backgroundQueue;
+        }
+
+	private async Task LongRunningTask()
+        {
+            await Task.Run(async () =>
+            {
+                for (int counter = 0; counter <= 100; counter++)
+                {
+                    await Task.Delay(1000);
+                }
+            });
+        }
+
+	[HttpPost]
+        public IActionResult OnPost()
+        {
+            backgroundQueue.Enqueue(async (cancelToken) =>
+            {
+                await LongRunningTask();
+            });
+
+            return RedirectToAction("Index", "Home");
+        }
